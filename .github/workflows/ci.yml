@@ -1,4 +1,4 @@
-name: CI Build For Random  File Generator
+name: CI Build For File Generator
 
 on:
   push:
