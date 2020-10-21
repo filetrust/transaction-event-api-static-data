@@ -1,84 +1,64 @@
-////////////////////////////////////////////////////////////////
-/* Variable Block */
-const account = "";
-const accountKey = "";
-const shareName = "";
-const numberOfFilesPerHour = 5;
-const dateRangeStart = new Date(2020, 9, 1);
-const dateRangeEnd = new Date(2020, 11, 31);
-//////////////////////////////////////////////////////////////
+#!/usr/bin/env node
+import { program } from "commander";
+import AzureFileShareService from "./services/azureFileShareService";
+import StaticDataService from "./services/staticDataService";
 
-// Azure library
-import { ShareServiceClient, StorageSharedKeyCredential } from "@azure/storage-file-share";
+const start = () => {
+  program
+    .requiredOption("-s, --share <share>", "Share Name - default is 'transactions'", "transactions")
+    .requiredOption("-a, --account <account>", "Azure Storage Account")
+    .requiredOption("-k, --key <key>", "Azure Storage Account Key")
 
-// Lib to Generate unique ID's
-import { v4 as Guid } from "uuid";
+  if (process.argv.includes("-l")) {
+    program
+      .requiredOption("-l, --list", "If set, lists the contents of a share to console")
+      .parse(process.argv);
+  }
+  else if (process.argv.includes("-g")) {
+    program
+      .requiredOption("-g, --generate", "If set, generates the contents of a share")
+      .requiredOption("-f, --files <files>", "Number of events to generate in each hour folder")
+      .requiredOption("-ts, --start <start>", "Hour of the date to start generating from")
+      .requiredOption("-te, --end <end>", "Hour of the date to stop generating from")
+      .helpOption("-h")
+      .parse(process.argv);
+  }
+  else if (process.argv.includes("-d")) {
+    program
+      .requiredOption("-d, --delete", "If set, deletes the contents of a share")
+      .parse(process.argv);
+  }
+  else {
+    console.log("Incorrect usage. View individual commands for more information.")
+    console.log("eventctl -d -s transactions -a myaccount -k myaccountkey")
+    console.log("eventctl -l -s transactions -a myaccount -k myaccountkey")
+    console.log("eventctl -g -s transactions -a myaccount -k myaccountkey -ts 2020-01-01 te 2021-01-01 -f 20")
+    return;
+  }
 
-// utility methods in same folder
-import { createDirectoryTree } from "./fileShareUtility";
-import { FileType, GwOutcome, NCFSOutcome, RequestMode, TransactionAdaptionEventModel } from "./TransactionAdaptionEventModel";
+  const azureFileShareService = new AzureFileShareService(program.account, program.key, program.share);
 
-const credential = new StorageSharedKeyCredential(account, accountKey);
-const serviceClient = new ShareServiceClient(
-  `https://${account}.file.core.windows.net`,
-  credential
-);
+  if (program.generate) {
+    const staticDataService = new StaticDataService(azureFileShareService, program.start, program.end, parseInt(program.files));
 
-var shareClient = serviceClient.getShareClient(shareName);
+    staticDataService.Generate().then(() => {
+      console.log("Generation has completed.");
+    }, reason => {
+      throw reason;
+    });
+  }
 
-function getMetadataPayload(fileId: string, timestamp: Date): Buffer {
-  return Buffer.from(JSON.stringify(
-    {
-      Events: [
-        TransactionAdaptionEventModel.NewDocumentEvent(Guid(), RequestMode.Response, fileId, timestamp),
-        TransactionAdaptionEventModel.FileTypeDetectedEvent(FileType.Docx, fileId, timestamp),
-        TransactionAdaptionEventModel.RebuildEventStarting(fileId, timestamp),
-        TransactionAdaptionEventModel.RebuildCompletedEvent(GwOutcome.Replace, fileId, timestamp),
-        TransactionAdaptionEventModel.AnalysisCompletedEvent(fileId, timestamp),
-        TransactionAdaptionEventModel.NcfsStartedEvent(fileId, timestamp),
-        TransactionAdaptionEventModel.NcfsCompletedEvent(NCFSOutcome.Replaced, fileId, timestamp),
-      ]
-    }))
+  if (program.delete) {
+    azureFileShareService.deleteEverything("").then(() => {
+      console.log("Deletion has reached completion.")
+    });
+  }
+
+  if (program.list) {
+    azureFileShareService.listEverything("").then(() => {
+      console.log("List operation complete.")
+    });
+  }
 }
 
-async function main() {
-
-  let currentHourDate = new Date(dateRangeStart);
-  do {
-    const nextHour = currentHourDate.getTime() + (1 * 60 * 60 * 1000);
-
-    for (let i = 0; i < numberOfFilesPerHour; i++) {
-      const fileId = Guid();
-
-      const timestamp = new Date(currentHourDate);
-      timestamp.setTime(Math.random() * (nextHour - timestamp.getTime()) + timestamp.getTime());
-      const fileDirectory = [
-        timestamp.getFullYear().toString(),
-        (timestamp.getMonth() + 1).toString(),
-        timestamp.getDate().toString(),
-        timestamp.getHours().toString(),
-        fileId
-      ].join("/");
-
-      console.log(`Generating file for timestamp '${timestamp}' ${fileDirectory}`);
-
-      var directory = await createDirectoryTree(shareClient.getDirectoryClient(""), fileDirectory);
-
-      var metadataFile = await directory.createFile("metadata.json", 0);
-      await metadataFile.fileClient.uploadData(getMetadataPayload(fileId, timestamp));
-
-      const report = await directory.createFile("report.xml", 0);
-      await report.fileClient.uploadData(Buffer.from("<xml></xml>"));
-    }
-
-    currentHourDate.setTime(nextHour);
-  } while (currentHourDate < dateRangeEnd)
-}
-
-main().then(() => {
-  console.log("Done");
-  // return deleteEverything(shareClient.getDirectoryClient(""));
-  // return listEverything(shareClient.getDirectoryClient(""), "");
-}, reason => {
-  throw reason;
-});
+start();
