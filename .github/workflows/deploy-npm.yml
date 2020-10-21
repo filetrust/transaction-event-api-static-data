@@ -1,0 +1,51 @@
+name: CI Build For File Generator
+
+on:
+  push:
+    branches: 
+      - master
+    paths-ignore: 
+      - package.json
+
+jobs:
+  build:
+    runs-on: ubuntu-16.04
+    strategy:
+      matrix:
+        node-version: [12.x]  
+     
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2 
+        with:
+          submodules: true
+          token: ${{ secrets.TOKEN_GITHUB }}
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+      - name: Build
+        run: |
+          npm install
+          npm run build
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+      - name: Version
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          npm version minor
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+      - name: Publish
+        run: |
+          npm run dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+          NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.github_token }}  
+          tags: true
+      - uses: actions/checkout@v1 
