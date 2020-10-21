@@ -23,7 +23,8 @@ Generate the static data
 - Create a VSCode launch config
 - Use the following template
 
-```{
+```
+{
             "type": "node",
             "request": "launch",
             "name": "Generate Static Data",
@@ -44,4 +45,5 @@ Generate the static data
                 "-f", "[REPLACE ME]",
                 "-g"
             ]
-}```
+}
+```
