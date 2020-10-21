@@ -16,7 +16,7 @@ List contents of a store
 ```eventctl -l -s transactions -a myaccount -k myaccountkey```
 
 Generate the static data
-```eventctl -g -s transactions -a myaccount -k myaccountkey -ts 2020-01-01 te 2021-01-01 -f 20```
+```eventctl -g -s transactions -a myaccount -k myaccountkey -ts 2020-01-01 -te 2021-01-01 -f 20```
 
 ### Start (VScode configuration)
 
