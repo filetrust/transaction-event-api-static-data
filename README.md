@@ -2,13 +2,46 @@
 
 ## How to
 
-### Start (VScode)
+### Run via CLI
 
-- Create an azure file share in the azure portal
-- Make note of Storage account name, access key and share name.
-- At the top of index.ts, enter these details.
-- Open a terminal in the root directory of the repo and run the following
-- `npm i`
-- `npm start`
+- Install the npm package globally: ```npm i transaction-event-api-static-data-cli -g```
+- To run the commands the entry point is ```eventctl```
 
-This may take a while depending on the start date, end date and number of files per hour
+### usage
+
+Delete contents of a store
+```eventctl -d -s transactions -a myaccount -k myaccountkey```
+
+List contents of a store
+```eventctl -l -s transactions -a myaccount -k myaccountkey```
+
+Generate the static data
+```eventctl -g -s transactions -a myaccount -k myaccountkey -ts 2020-01-01 te 2021-01-01 -f 20```
+
+### Start (VScode configuration)
+
+- Create a VSCode launch config
+- Use the following template
+
+```{
+            "type": "node",
+            "request": "launch",
+            "name": "Generate Static Data",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\dist\\src\\index.js",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
+            "args": [
+                "-a", "[REPLACE ME]",
+                "-s", "[REPLACE ME]",
+                "-k", "[REPLACE ME]",
+                "-ts", "[REPLACE ME]",
+                "-te", "[REPLACE ME]",
+                "-f", "[REPLACE ME]",
+                "-g"
+            ]
+}```
