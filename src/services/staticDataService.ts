@@ -30,7 +30,7 @@ export default class StaticDataService {
                 console.log(`Generating file for timestamp '${timestamp}' ${fileDirectory}`);
                 
                 await this.shareService.uploadFile(fileDirectory, "metadata.json", new transactionAdaptionEventMetadataFile(fileId, timestamp).toBuffer());
-                await this.shareService.uploadFile(fileDirectory, "report.json", new analysisReport().toBuffer());
+                await this.shareService.uploadFile(fileDirectory, "report.xml", new analysisReport().toBuffer());
             }
 
             currentHourDate.setTime(nextHour);
