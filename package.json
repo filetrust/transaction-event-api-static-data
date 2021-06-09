@@ -29,7 +29,7 @@
   "preferGlobal": true,
   "dependencies": {
     "@azure/storage-file-share": "^12.2.0",
-    "commander": "^6.1.0",
+    "commander": "^6.2.1",
     "cpx": "^1.5.0",
     "form-data": "^3.0.0",
     "node-fetch": "^2.6.0",
